@@ -21,32 +21,31 @@ let desiredLength;
 
 const sliderRange = 7;
 const steps = 100;
-const stringWeight = 10;
+const stringWeight = 7;
 const stringGap = 3;
 const stringSize = 0.7;
 
 let animate = true;
 
-// var noisy = SimplexNoise;
-// console.log("simple", SimplexNoise(10));
-
 new p5((p5) => {
   p5.setup = () => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight, p5.SVG);
-    desiredLength = Math.min(p5.width, p5.height) * p5.PI * stringSize;
 
-    slider = p5.createSlider(
-      0,
-      sliderRange,
-      p5.random(sliderRange),
-      sliderRange / steps
-    );
+    const sliderPos = p5.getItem("sliderPosition")
+      ? p5.getItem("sliderPosition")
+      : p5.storeItem("sliderPosition", Math.abs(p5.random() * sliderRange));
+
+    console.log("pos", sliderPos);
+    slider = p5.createSlider(0, sliderRange, sliderPos, sliderRange / steps);
     slider.addClass("slider");
-    slider.position(10, p5.height - 30);
-    slider.style("width", p5.width - 25 + "px");
+
     slider.input(() => {
+      p5.clear();
       p5.redraw();
+      p5.storeItem("sliderPosition", slider.value());
     });
+
+    setInitialValues();
 
     // p5.noLoop();
   };
@@ -57,7 +56,7 @@ new p5((p5) => {
     let prevX, prevY;
     p5.translate(p5.width / 2, p5.height / 2 - 50);
     p5.stroke(0);
-    p5.strokeWeight(stringWeight);
+    p5.strokeWeight((stringWeight * p5.width) / 1580);
     p5.strokeCap(p5.ROUND);
     p5.noFill();
 
@@ -122,6 +121,10 @@ new p5((p5) => {
     }
   };
 
+  p5.windowResized = () => {
+    location.reload();
+  };
+
   // trigger svg save
   p5.keyTyped = () => {
     if (p5.key === "s") {
@@ -146,5 +149,11 @@ new p5((p5) => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     }, 0);
+  }
+
+  function setInitialValues() {
+    desiredLength = Math.min(p5.width, p5.height) * p5.PI * stringSize;
+    slider.position(10, p5.height - 30);
+    slider.style("width", p5.width - 25 + "px");
   }
 });
