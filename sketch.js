@@ -106,8 +106,8 @@ new p5((p5) => {
     shapeArray.forEach((point) => p5.vertex(point[0], point[1]));
     p5.endShape();
     if (animate) {
-      phase += 0.003;
-      zoff += 0.001;
+      phase += 0.001;
+      zoff += 0.0005;
     }
   };
 
@@ -122,7 +122,7 @@ new p5((p5) => {
   };
 
   p5.windowResized = () => {
-    location.reload();
+    reloadPage();
   };
 
   // trigger svg save
@@ -157,3 +157,23 @@ new p5((p5) => {
     slider.style("width", p5.width - 25 + "px");
   }
 });
+
+function debounce(func, wait, immediate) {
+  var timeout;
+  return function () {
+    var context = this,
+      args = arguments;
+    var later = function () {
+      timeout = null;
+      if (!immediate) func.apply(context, args);
+    };
+    var callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(context, args);
+  };
+}
+
+const reloadPage = debounce(function () {
+  location.reload();
+}, 250);
