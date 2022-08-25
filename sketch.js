@@ -4,6 +4,11 @@
 // https://youtu.be/ZI1dmHv3MeM
 // https://editor.p5js.org/codingtrain/sketches/sy1p1vnQn
 
+// https://github.com/jwagner/simplex-noise.js/blob/main/README.md
+// import { createNoise3D } from "https://cdn.skypack.dev/simplex-noise@4.0.0";
+import { createNoise3D } from "./simplex-noise.js";
+const noise3D = createNoise3D();
+
 let phase = 0;
 let zoff = 0;
 let slider;
@@ -14,63 +19,132 @@ let circumference;
 
 let desiredLength;
 
-const sliderRange = 4;
-const steps = 30;
+const sliderRange = 7;
+const steps = 100;
+const stringWeight = 10;
+const stringGap = 3;
+const stringSize = 0.7;
 
-function setup() {
-  createCanvas(windowWidth, windowHeight, SVG);
-  desiredLength = Math.min(width, height) * PI * 0.7;
-  console.log(width, height, Math.min(width, height));
+let animate = true;
 
-  slider = createSlider(0, sliderRange, 0, sliderRange / steps);
-  slider.position(10, height - 30);
-  slider.style("width", width - 25 + "px");
-  slider.input(() => {
-    resetValues();
-    redraw();
-  });
+// var noisy = SimplexNoise;
+// console.log("simple", SimplexNoise(10));
 
-  resetValues();
-  noLoop();
-}
+new p5((p5) => {
+  p5.setup = () => {
+    p5.createCanvas(p5.windowWidth, p5.windowHeight, p5.SVG);
+    desiredLength = Math.min(p5.width, p5.height) * p5.PI * stringSize;
 
-function draw() {
-  clear();
-  circumference = 0;
-  let prevX, prevY;
-  translate(width / 2, height / 2 - 50);
-  stroke(0);
-  strokeWeight(1);
-  strokeCap(ROUND);
-  noFill();
+    slider = p5.createSlider(
+      0,
+      sliderRange,
+      p5.random(sliderRange),
+      sliderRange / steps
+    );
+    slider.addClass("slider");
+    slider.position(10, p5.height - 30);
+    slider.style("width", p5.width - 25 + "px");
+    slider.input(() => {
+      p5.redraw();
+    });
 
-  let shapeArray = [];
+    // p5.noLoop();
+  };
 
-  let noiseMax = slider.value();
-  for (let a = phase; a < TWO_PI + phase - radians(3); a += radians(1)) {
-    let xoff = map(cos(a + phase), -1, 1, 0, noiseMax);
-    let yoff = map(sin(a + phase), -1, 1, 0, noiseMax);
-    let r = map(noise(xoff, yoff, zoff), 0, 1, 100, width / 2);
-    let x = r * cos(a);
-    let y = r * sin(a);
+  p5.draw = () => {
+    p5.clear();
+    circumference = 0;
+    let prevX, prevY;
+    p5.translate(p5.width / 2, p5.height / 2 - 50);
+    p5.stroke(0);
+    p5.strokeWeight(stringWeight);
+    p5.strokeCap(p5.ROUND);
+    p5.noFill();
 
-    shapeArray.push([x, y]);
+    let shapeArray = [];
 
-    if (prevX && prevY) {
-      circumference += dist(prevX, prevY, x, y);
+    let noiseMax = slider.value();
+    for (
+      let a = phase;
+      a < p5.TWO_PI + phase - p5.radians(stringGap);
+      a += p5.radians(1)
+    ) {
+      let xoff = p5.map(p5.cos(a + phase), -1, 1, 0, noiseMax);
+      let yoff = p5.map(p5.sin(a + phase), -1, 1, 0, noiseMax);
+
+      //   simplex;
+      let r = p5.map(
+        noise3D(xoff, yoff, zoff),
+        -1,
+        1,
+        p5.width / 4,
+        p5.width / 2
+      );
+
+      //perlin
+      // let r = p5.map(
+      //   p5.noise(xoff, yoff, zoff),
+      //   0,
+      //   1,
+      //   p5.width / 4,
+      //   p5.width / 2
+      // );
+
+      let x = r * p5.cos(a);
+      let y = r * p5.sin(a);
+
+      shapeArray.push([x, y]);
+
+      if (prevX && prevY) {
+        circumference += p5.dist(prevX, prevY, x, y);
+      }
+
+      prevX = x;
+      prevY = y;
     }
+    p5.scale(desiredLength / circumference);
+    p5.beginShape();
+    shapeArray.forEach((point) => p5.vertex(point[0], point[1]));
+    p5.endShape();
+    if (animate) {
+      phase += 0.003;
+      zoff += 0.001;
+    }
+  };
 
-    prevX = x;
-    prevY = y;
+  p5.mousePressed = (event) => {
+    if (event.target.className === "slider") return;
+    animate = !animate;
+    if (animate) {
+      p5.loop();
+    } else {
+      p5.noLoop();
+    }
+  };
+
+  // trigger svg save
+  p5.keyTyped = () => {
+    if (p5.key === "s") {
+      downloadSvg();
+    }
+  };
+
+  // save svg
+  function downloadSvg() {
+    let svgElement = document.getElementsByTagName("svg")[0];
+    let svg = svgElement.outerHTML;
+    let file = new Blob([svg], { type: "plain/text" });
+    let a = document.createElement("a"),
+      url = URL.createObjectURL(file);
+
+    a.href = url;
+    a.download = "circles.svg";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(function () {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 0);
   }
-  scale(desiredLength / circumference);
-  beginShape();
-  shapeArray.forEach((point) => vertex(point[0], point[1]));
-  endShape();
-  // phase += 0.003;
-  // zoff += 0.001;
-}
-
-function resetValues() {
-  circumference = 0;
-}
+});
